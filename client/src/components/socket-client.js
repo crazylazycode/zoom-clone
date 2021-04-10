@@ -6,7 +6,8 @@ import Peer from "simple-peer";
 
 const SocketContext = createContext();
 
-const socket = io("http://localhost:5000/");
+// const socket = io("http://localhost:5000/");
+const socket = io("https://not-zoom.herokuapp.com/");
 
 const ContextProvider = ({ children }) => {
 
@@ -17,8 +18,8 @@ const ContextProvider = ({ children }) => {
     const [callEnded,setcallEnded] = useState(false);
     const [name,setName] = useState('')
 
-    const CallerVideo = useRef();
-    const ReceiverVideo = useRef();
+    const myVideo = useRef();
+    const userVideo = useRef();
     const connectionRef = useRef();
 
     useEffect(() => {
@@ -26,7 +27,7 @@ const ContextProvider = ({ children }) => {
             .then((currentStream) => {
                 setStream(currentStream);
 
-                CallerVideo.current.srcObject = currentStream;
+                myVideo.current.srcObject = currentStream;
             })
             .catch(error => {
                 console.error('Error accessing media devices.', error);
@@ -34,7 +35,7 @@ const ContextProvider = ({ children }) => {
 
             socket.on('me',id => setMe(id));
 
-            socket.on('calluser', ({ from,name : callerName,signal }) => {
+            socket.on('callUser', ({ from,name : callerName,signal }) => {
                 setCall({ isReceivedCall:true ,from ,name: callerName, signal});
             })
     },[]) 
@@ -45,11 +46,11 @@ const ContextProvider = ({ children }) => {
         const peer = new Peer({ initiator:false, trickle:false ,stream})
 
         peer.on('signal', (data) => {
-            socket.emit('answercall', { signal: data, to: call.from});
+            socket.emit('answerCall', { signal: data, to: call.from});
         });
 
         peer.on('stream',(currentStream) => {
-            ReceiverVideo.current.srcObject = currentStream;
+            userVideo.current.srcObject = currentStream;
         });
 
         peer.signal(call.signal);
@@ -65,7 +66,7 @@ const ContextProvider = ({ children }) => {
         });
 
         peer.on('stream',(currentStream) => {
-            ReceiverVideo.current.srcObject = currentStream;
+            userVideo.current.srcObject = currentStream;
         });
 
 
@@ -91,8 +92,8 @@ const ContextProvider = ({ children }) => {
         <SocketContext.Provider value={{
             call,
             callAccepted,
-            CallerVideo,
-            ReceiverVideo,
+            myVideo,
+            userVideo,
             stream,
             name,
             setName,
